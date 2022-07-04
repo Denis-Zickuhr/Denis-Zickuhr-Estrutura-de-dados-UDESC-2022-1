@@ -14,7 +14,7 @@ import Process.MatchWatcher;
  *
  * @author Denis
  */
-public class PuzzleRenderer extends JDialog {
+public class PuzzleRenderer extends JFrame {
     private JPanel jp_contentPane;
     private JPanel jp_grid;
     private JPanel jp_buttons;
@@ -41,7 +41,7 @@ public class PuzzleRenderer extends JDialog {
         setContentPane(jp_contentPane);
         setTitle("App");
         setLocation(0,0);
-        setModal(true);
+        //setVisible(true);
 
         // getRootPane().setDefaultButton(btn_load);
 
@@ -128,6 +128,11 @@ public class PuzzleRenderer extends JDialog {
             mt = new MatchWatcher(array.clone());
         else
         mt.watch(array.clone());
+
+        if (mt.win())
+            System.out.println("W");
+        else
+            System.out.println("L");
 
 
 

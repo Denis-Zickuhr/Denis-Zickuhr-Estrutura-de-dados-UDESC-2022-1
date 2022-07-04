@@ -8,7 +8,7 @@ public class App {
         PuzzleRenderer dialog = new PuzzleRenderer();
         dialog.pack();
         dialog.setVisible(true);
-        System.exit(0);
+        //System.exit(0);
     }
 
 }
