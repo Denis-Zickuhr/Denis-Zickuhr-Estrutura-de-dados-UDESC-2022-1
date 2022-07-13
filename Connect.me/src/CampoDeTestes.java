@@ -34,22 +34,11 @@ public class CampoDeTestes {
 //
         String blocos = "0000000000001110";
 
-        int[] ordem = new int[]{1,2,3};
-
+//        int[] ordem = new int[]{1,2,3};
 
         CampoDeTestes campoDeTestes = new CampoDeTestes();
-        //campoDeTestes.permute(ordem);
 
-        //System.out.println(list);
-
-        //System.out.println(campoDeTestes.binarySelection(blocos, 16).length);
-
-        //campoDeTestes.merge(campoDeTestes.binarySelection(blocos, 8), list);
-
-//        int r = 4;
-//        for (int i = 0; i < Math.pow(r, r); i++) {
-//            System.out.println(padLeftStatic(Integer.toString(Integer.parseInt(Integer.toString(i), 10), 4), r, '0'));
-//        }
+        campoDeTestes.binarySelection(blocos, 16);
 
     }
 
@@ -155,17 +144,22 @@ public class CampoDeTestes {
         ArrayList temp = new ArrayList();
         CharSequence cs;
 
-        for (int i = 0; i < Math.pow(2, bits); i++) {
+        for (int i = (int)Math.pow(2, bits); i > 0; i--) {
             cs = padLeft(Integer.toBinaryString(i),bits, '0');
             if (string.chars().average().equals(cs.chars().average())){
-                String str = cs.toString().replaceAll("1", "#");
+                String str = cs.toString();//.replaceAll("1", "#");
 
+
+
+                System.out.println(str);
+
+                temp.add(str);
 //                for (int last = 0; last < list.size(); last++) {
 //                    String strCopy = str;
 //                    for (int j = 0; j < list.get(last).toString().length(); j++) {
 //                        strCopy = strCopy.replaceFirst("#", list.get(last).toString().charAt(j) + "");
 //                    }
-//                    temp.add(strCopy);
+
 //                }
             }
         }

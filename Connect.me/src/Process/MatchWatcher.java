@@ -36,7 +36,6 @@ public class MatchWatcher {
                 }
             }
         }
-        System.out.println(blockPool);
     }
 
     public boolean win(){

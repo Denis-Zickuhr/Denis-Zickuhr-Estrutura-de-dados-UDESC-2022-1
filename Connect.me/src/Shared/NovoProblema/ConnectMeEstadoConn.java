@@ -4,7 +4,7 @@ import Shared.Buscas.*;
 
 import java.util.*;
 
-public class ConnectMeEstado implements Estado {
+public class ConnectMeEstadoConn implements Estado {
 
 	private String[][] movimentosValidos;
 	private final String[][] puzzle;
@@ -13,10 +13,11 @@ public class ConnectMeEstado implements Estado {
 	private List<Solution[]> solutionsList;
 	private final boolean firstGen;
 	private Solution[] solutions;
-	private final int next;
+	private int next;
 	private String generator;
+	private int meta;
 
-	public ConnectMeEstado(String[][] puzzle, String[][] movimentosValidos, String ordemBlocos){
+	public ConnectMeEstadoConn(String[][] puzzle, String[][] movimentosValidos, String ordemBlocos){
 		this.puzzle = puzzle;
 		this.movimentosValidos = movimentosValidos;
 		this.ordemBlocos = ordemBlocos;
@@ -24,14 +25,16 @@ public class ConnectMeEstado implements Estado {
 		next = 0;
 		this.generator =  "pai";
 		this.solutionsList = null;
+		meta = 0;
 	}
 
-	private ConnectMeEstado(String[][] puzzle, Solution[] solutions, int prox, String generator){
+	private ConnectMeEstadoConn(String[][] puzzle, Solution[] solutions, int prox, String generator, int meta){
 		this.puzzle = puzzle;
 		this.solutions = solutions;
 		this.generator = generator;
 		firstGen = false;
 		this.next = prox;
+		this.meta = meta;
 	}
 
 	public String[][] getPuzzle() {
@@ -161,7 +164,7 @@ public class ConnectMeEstado implements Estado {
 				maxRotations = 1;
 		}
 		int maxMovements = (int)Math.pow(2, 16);
-		for (int i = 0; i < maxMovements; i++) {
+		for (int i = maxMovements; i >= 0; i--) {
 			cs = padLeft(Integer.toBinaryString(i), 16);
 
 			boolean movimentoValido = ordemBlocos.chars().average().equals(cs.chars().average());
@@ -215,7 +218,7 @@ public class ConnectMeEstado implements Estado {
 						String[][] newPuzzle = value[j].getSolution();
 						String newGenerator = value[j].getBlockReference();
 						value[j] = null;
-						ConnectMeEstado sucessor = new ConnectMeEstado(newPuzzle, value, 1, newGenerator);
+						ConnectMeEstadoConn sucessor = new ConnectMeEstadoConn(newPuzzle, value, 1, newGenerator, meta(newPuzzle));
 						suc.add(sucessor);
 						break;
 					}
@@ -223,10 +226,21 @@ public class ConnectMeEstado implements Estado {
 			}
 		}else{
 			try {
-				String[][] newPuzzle = this.solutions[next].getSolution();
-				String newGenerator = this.solutions[next].getBlockReference();
-				ConnectMeEstado sucessor = new ConnectMeEstado(newPuzzle, this.solutions, next + 1, newGenerator);
-				suc.add(sucessor);
+				int aux = Integer.MIN_VALUE;
+				while(this.meta >= aux){ //10 > 0; 10 > 9
+					String[][] newPuzzle = this.solutions[next].getSolution();
+					aux = meta(newPuzzle);
+					if(aux > this.meta){
+						String newGenerator = this.solutions[next].getBlockReference();
+						ConnectMeEstadoConn sucessor = new ConnectMeEstadoConn(newPuzzle, this.solutions, next + 1, newGenerator, aux);
+						suc.add(sucessor);
+					}else{
+						this.next++;
+						if(next == this.solutions.length){
+							return suc;
+						}
+					}
+				}
 			}catch(Exception e){
 				// Fim do nó deste sucessor
 			}
@@ -384,6 +398,45 @@ public class ConnectMeEstado implements Estado {
 		return true;
 	}
 
+	private int meta(String[][] newPuzzle){
+		int meta = 0;
+		int upperBound = 3, lowerBound = 0;
+		if (newPuzzle != null){
+			for (int i = 0; i < 4; i++){
+				for (int j = 0; j < 4; j++) {
+					int right = 1 + j, left = -1 + j, up = -1 + i, down = 1 + i;
+
+					meta++;
+
+					// Verificação axial 1, valida peças a direita e acima
+					if (axialVerification(
+							i,
+							j,
+							up >= lowerBound,
+							right <= upperBound,
+							right,
+							up,
+							new int[]{0, 2, 2, 4},
+							newPuzzle))
+						return meta;
+
+					// Verificação axial 2, valida peças a esquerda e abaixo
+					if (axialVerification(
+							i,
+							j,
+							down <= upperBound,
+							left >= lowerBound,
+							left,
+							down,
+							new int[]{2, 0, 4, 2},
+							newPuzzle))
+						return meta;
+				}
+			}
+		}
+		return meta;
+	}
+
 	private boolean axialVerification(int i, int j, boolean goUpperBound, boolean goLowerBound,
 									  int horizontal, int vertical, int[] directionSet) {
 		int block;
@@ -404,6 +457,30 @@ public class ConnectMeEstado implements Estado {
 		block = Integer.parseInt(puzzle[i][j].substring(directionSet[0]+1, directionSet[2]));
 		if (goLowerBound & block != 0){
 			pairBlock = Integer.parseInt(puzzle[i][horizontal].substring(directionSet[1]+1, directionSet[3]));
+			return block != pairBlock;
+		}else return block != 0;
+	}
+
+	private boolean axialVerification(int i, int j, boolean goUpperBound, boolean goLowerBound,
+									  int horizontal, int vertical, int[] directionSet, String[][] newPuzzle) {
+		int block;
+		int pairBlock;
+
+		// Verifica o eixo Vertical
+		block = Integer.parseInt(newPuzzle[i][j].substring(directionSet[0], directionSet[0]+1));
+		if (goUpperBound & block != 0){
+			pairBlock = Integer.parseInt(newPuzzle[vertical][j].substring(directionSet[1], directionSet[1]+1));
+			if (block != pairBlock){
+				return true;
+			}
+		}else if (block != 0){
+			return true;
+		}
+
+		// Verifica o eixo Horizontal
+		block = Integer.parseInt(newPuzzle[i][j].substring(directionSet[0]+1, directionSet[2]));
+		if (goLowerBound & block != 0){
+			pairBlock = Integer.parseInt(newPuzzle[i][horizontal].substring(directionSet[1]+1, directionSet[3]));
 			return block != pairBlock;
 		}else return block != 0;
 	}

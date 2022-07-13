@@ -7,11 +7,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
-import java.util.Arrays;
 
 import Process.MatchWatcher;
 import Shared.Buscas.*;
-import Shared.NovoProblema.ConnectMeEstado;
+import Shared.NovoProblema.ConnectMeEstadoConn;
+import Shared.NovoProblema.ConnectMeEstadoENode;
 
 /**
  *
@@ -23,6 +23,8 @@ public class PuzzleRenderer extends JFrame {
     private JButton btn_load;
     private JButton btn_width;
     private JButton btn_depth;
+    private JButton btn_widthDis;
+    private JButton btn_depthDis;
     private JButton btn_about;
     private final JLabel description;
     private boolean redraw = false;
@@ -78,20 +80,25 @@ public class PuzzleRenderer extends JFrame {
     }
 
     private void loadGrid(){
-        jp_grid = new JPanel(new GridLayout(4,4,10,10));
+        jp_grid = new JPanel(new GridLayout(4,4,0,0));
+        jp_grid.setBackground(Color.white);
         jp_grid.setSize(800, 800);
         jp_contentPane.add(BorderLayout.CENTER,jp_grid);
     }
 
     private void loadButtons(){
         JPanel jp_buttons = new JPanel();
-        btn_load = new JButton("Load");
-        btn_width = new JButton("Width");
-        btn_depth = new JButton("Depth");
-        btn_about = new JButton("About");
+        btn_load = new JButton("Carregar");
+        btn_width = new JButton("Largura (1)");
+        btn_depth = new JButton("Profundidade (1)");
+        btn_widthDis = new JButton("Largura");
+        btn_depthDis = new JButton("Profundidade");
+        btn_about = new JButton("Sobre");
         jp_buttons.add(btn_load);
-        jp_buttons.add(btn_width);
-        jp_buttons.add(btn_depth);
+//        jp_buttons.add(btn_width);
+//        jp_buttons.add(btn_depth);
+        jp_buttons.add(btn_widthDis);
+        jp_buttons.add(btn_depthDis);
         jp_buttons.add(btn_about);
         jp_contentPane.add(BorderLayout.SOUTH, jp_buttons);
         loadEvents();
@@ -123,6 +130,24 @@ public class PuzzleRenderer extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 try {
                     onDepth();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+        btn_widthDis.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    onWidthDis();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+        btn_depthDis.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    onDepthDis();
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
@@ -198,19 +223,19 @@ public class PuzzleRenderer extends JFrame {
             }else{
                 ImagePanel block = new ImagePanel("src/Assets/null.png");
                 block.setPreferredSize(new Dimension(120, 120));
-                block.setBackground(Color.white);
+               //block.setBackground(Color.gray);
 
                 JPanel bar_south = new JPanel();
-                bar_south.setBackground(Color.white);
+                //bar_south.setBackground(Color.white);
 
                 JPanel bar_north = new JPanel();
-                bar_north.setBackground(Color.white);
+                //bar_north.setBackground(Color.white);
 
                 JPanel bar_east = new JPanel();
-                bar_east.setBackground(Color.white);
+                //bar_east.setBackground(Color.white);
 
                 JPanel bar_west = new JPanel();
-                bar_west.setBackground(Color.white);
+                //bar_west.setBackground(Color.white);
 
                 jp_block.add(BorderLayout.CENTER, block);
                 jp_block.add(BorderLayout.SOUTH, bar_south);
@@ -289,10 +314,10 @@ public class PuzzleRenderer extends JFrame {
 
     private void onWidth() throws Exception {
 
-        ConnectMeEstado estadoInicial = new ConnectMeEstado(mt.getPuzzle(), mt.getMovimentosValidos(), mt.getOrdem());
+        ConnectMeEstadoConn estadoInicial = new ConnectMeEstadoConn(mt.getPuzzle(), mt.getMovimentosValidos(), mt.getOrdem());
 
-        Busca<ConnectMeEstado> busca = new BuscaLargura<>(new MostraStatusConsole());
-        ConnectMeEstado estadoFinal = (ConnectMeEstado)busca.busca(estadoInicial).getEstado();
+        Busca<ConnectMeEstadoConn> busca = new BuscaLargura<>(new MostraStatusConsole());
+        ConnectMeEstadoConn estadoFinal = (ConnectMeEstadoConn)busca.busca(estadoInicial).getEstado();
         setDescription(
                 "Time elapsed: "+busca.getStatus().getTempoDecorrido()
                         +"ms, Solution depth: "+busca.getStatus().getProfundidade()
@@ -305,12 +330,46 @@ public class PuzzleRenderer extends JFrame {
 
     private void onDepth() throws Exception {
 
-        ConnectMeEstado estadoInicial = new ConnectMeEstado(mt.getPuzzle(), mt.getMovimentosValidos(), mt.getOrdem());
+        ConnectMeEstadoConn estadoInicial = new ConnectMeEstadoConn(mt.getPuzzle(), mt.getMovimentosValidos(), mt.getOrdem());
 
-        ConnectMeEstado estadoFinal;
+        ConnectMeEstadoConn estadoFinal;
 
-        Busca<ConnectMeEstado> busca = new BuscaProfundidade<>(mt.getDepth(), new MostraStatusConsole());
-        estadoFinal = (ConnectMeEstado) busca.busca(estadoInicial).getEstado();
+        Busca<ConnectMeEstadoConn> busca = new BuscaProfundidade<>(mt.getDepth(), new MostraStatusConsole());
+        estadoFinal = (ConnectMeEstadoConn) busca.busca(estadoInicial).getEstado();
+        setDescription(
+                "Time elapsed: "+busca.getStatus().getTempoDecorrido()
+                        +"ms, Solution depth: "+busca.getStatus().getProfundidade()
+                        +", Nodes visited: " + busca.getStatus().getVisitados());
+
+        String result = mt.getAsSolution(estadoFinal.getPuzzle(), estadoFinal.getGenerator());
+        drawGrid(this.dataPacker.getPuzzle(result));
+
+    }
+
+    private void onWidthDis() throws Exception {
+
+        ConnectMeEstadoENode estadoInicial = new ConnectMeEstadoENode(mt.getPuzzle(), mt.getMovimentosValidos(), mt.getOrdem());
+
+        Busca<ConnectMeEstadoENode> busca = new BuscaLargura<>(new MostraStatusConsole());
+        ConnectMeEstadoENode estadoFinal = (ConnectMeEstadoENode)busca.busca(estadoInicial).getEstado();
+        setDescription(
+                "Time elapsed: "+busca.getStatus().getTempoDecorrido()
+                        +"ms, Solution depth: "+busca.getStatus().getProfundidade()
+                        +", Nodes visited: " + busca.getStatus().getVisitados());
+
+        String result = mt.getAsSolution(estadoFinal.getPuzzle(), estadoFinal.getGenerator());
+        drawGrid(this.dataPacker.getPuzzle(result));
+
+    }
+
+    private void onDepthDis() throws Exception {
+
+        ConnectMeEstadoENode estadoInicial = new ConnectMeEstadoENode(mt.getPuzzle(), mt.getMovimentosValidos(), mt.getOrdem());
+
+        ConnectMeEstadoENode estadoFinal;
+
+        Busca<ConnectMeEstadoENode> busca = new BuscaProfundidade<>(mt.getDepth(), new MostraStatusConsole());
+        estadoFinal = (ConnectMeEstadoENode) busca.busca(estadoInicial).getEstado();
         setDescription(
                 "Time elapsed: "+busca.getStatus().getTempoDecorrido()
                         +"ms, Solution depth: "+busca.getStatus().getProfundidade()

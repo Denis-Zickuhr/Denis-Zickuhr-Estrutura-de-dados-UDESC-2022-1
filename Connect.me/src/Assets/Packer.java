@@ -44,8 +44,6 @@ public class Packer {
                 sb.append(System.lineSeparator());
             }
 
-            System.out.println(result);
-
             return packData(getData(result)).get(0);
 
         } catch (IOException e) {
