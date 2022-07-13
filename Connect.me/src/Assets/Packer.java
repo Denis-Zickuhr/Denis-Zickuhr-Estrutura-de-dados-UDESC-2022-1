@@ -9,14 +9,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class Puzzles {
+public class Packer {
 
     private ArrayList<BlockEntity[]> packData(ArrayList<String[]> list){
         BlockEntity[] sample = new BlockEntity[16];
         for (int i = 0; i < list.size(); i++) {
             String[] dataItem = list.get(i);
             if(dataItem != null) {
-                CircularlyLinkedList tubes = new CircularlyLinkedList();
+                CircularlyLinkedList<Integer> tubes = new CircularlyLinkedList<>();
                 tubes.addFirst(Integer.parseInt(dataItem[3]));
                 tubes.addFirst(Integer.parseInt(dataItem[2]));
                 tubes.addFirst(Integer.parseInt(dataItem[1]));
@@ -31,31 +31,29 @@ public class Puzzles {
         return result;
     }
 
-    private static String loadPuzzle(String path) throws IOException {
-        String result = new String();
-        BufferedReader br = new BufferedReader(new FileReader(path));
-        try {
+    public BlockEntity[] loadPuzzle(String path) throws Exception {
+
+        try (BufferedReader br = new BufferedReader(new FileReader(path))) {
             StringBuilder sb = new StringBuilder();
             String line = br.readLine();
 
-            while (line != null) {
+            String result = "empty";
+            if (line != null) {
                 result = line;
                 sb.append(line);
                 sb.append(System.lineSeparator());
-                break;
             }
 
-            return result;
+            System.out.println(result);
+
+            return packData(getData(result)).get(0);
 
         } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            br.close();
-    }
-        return null;
+            throw new Exception("Arquivo não selecionado pelo usuário");
+        }
     }
 
-    private static ArrayList<String[]> getData(String result) throws IOException {
+    private ArrayList<String[]> getData(String result) throws IOException {
         ArrayList<String[]> data = new ArrayList<>();
         result = result.substring(1, result.length() - 1);
         String[] objList = result.split(",");
@@ -79,8 +77,8 @@ public class Puzzles {
         return data;
     }
 
-    public BlockEntity[] returnPuzzle(String result) throws IOException {
-        return packData(getData(loadPuzzle(result))).get(0);
+    public BlockEntity[] getPuzzle(String result) throws IOException {
+        return packData(getData(result)).get(0);
     }
 
 }

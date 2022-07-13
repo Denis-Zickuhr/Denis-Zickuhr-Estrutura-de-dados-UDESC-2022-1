@@ -53,11 +53,6 @@ public class BlockEntity extends BaseEntity{
         return super.getID();
     }
 
-    @Override
-    public String toString() {
-        return super.toString();
-    }
-
     private boolean typeIsValid(String type){
         boolean isValid;
         switch(type){
@@ -71,4 +66,11 @@ public class BlockEntity extends BaseEntity{
         return isValid;
     }
 
+    @Override
+    public String toString() {
+        return "BlockEntity{" +
+                "tubes=" + tubes +
+                ", type='" + type + '\'' +
+                '}';
+    }
 }

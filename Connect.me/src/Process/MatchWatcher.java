@@ -1,27 +1,42 @@
 package Process;
 
+import DataStructure.CircularlyLinkedList;
 import Model.BlockEntity;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class MatchWatcher {
 
     private String[][] puzzle;
-    private BlockEntity[] blockEntity;
+    private String[][] movimentosValidos;
+    private String ordem;
+    private int depth;
+    private final List<String> blockPool = new ArrayList<>(16);
+
+    public String[][] getPuzzle() {
+        return puzzle;
+    }
 
     public MatchWatcher(BlockEntity[] blockEntity){
         watch(blockEntity);
     }
 
-    public MatchWatcher(String[][] doubleAxisPuzzle){
-        watch(doubleAxisPuzzle);
-    }
-
     public void watch(BlockEntity[] blockEntity) {
-        this.blockEntity = blockEntity;
-        puzzle = convertPuzzle(this.blockEntity);
-    }
-
-    public void watch(String[][] doubleAxisPuzzle) {
-        this.puzzle = doubleAxisPuzzle;
+        puzzle = convertPuzzle(blockEntity);
+        blockPool.clear();
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                switch (movimentosValidos[i][j]) {
+                    case "1" -> blockPool.add("red");
+                    case "2" -> blockPool.add("blue");
+                    case "3" -> blockPool.add("orange");
+                    case "4" -> blockPool.add("green");
+                }
+            }
+        }
+        System.out.println(blockPool);
     }
 
     public boolean win(){
@@ -60,49 +75,6 @@ public class MatchWatcher {
         return true;
     }
 
-    public boolean puzzleIsConexo(String[][] puzzle){
-        int upperBound = 3, lowerBound = 0;
-        if (puzzle != null){
-            for (int i = 0; i < 4; i++){
-                for (int j = 0; j < 4; j++) {
-
-                    int solidoes = 0;
-                    int adjacencias = 0;
-
-                    int right = 1 + j, left = -1 + j, up = -1 + i, down = 1 + i;
-                if(!puzzle[i][j].equals("0000")){
-                    if (up >= lowerBound) {
-                        adjacencias++;
-                        if (puzzle[up][j].equals("0000")) {
-                            solidoes++;
-                        }
-                    }
-                    if (right <= upperBound) {
-                        adjacencias++;
-                        if (puzzle[i][right].equals("0000")) {
-                            solidoes++;
-                        }
-                    }
-                    if (down <= upperBound) {
-                        adjacencias++;
-                        if (puzzle[down][j].equals("0000")) {
-                            solidoes++;
-                        }
-                    }
-                    if (left >= lowerBound) {
-                        adjacencias++;
-                        if (puzzle[i][left].equals("0000")) {
-                            solidoes++;
-                        }
-                    }
-                }
-                    if(adjacencias == solidoes & solidoes != 0){return false;}
-                }
-            }
-        }
-        return true;
-    }
-
     private boolean axialVerification(int i, int j, boolean goUpperBound, boolean goLowerBound,
                                       int horizontal, int vertical, int[] directionSet) {
         int block;
@@ -112,7 +84,6 @@ public class MatchWatcher {
         block = Integer.parseInt(puzzle[i][j].substring(directionSet[0], directionSet[0]+1));
         if (goUpperBound & block != 0){
             pairBlock = Integer.parseInt(puzzle[vertical][j].substring(directionSet[1], directionSet[1]+1));
-            System.out.println(pairBlock);
             if (block != pairBlock){
                 return true;
             }
@@ -134,10 +105,20 @@ public class MatchWatcher {
         return false;
     }
 
+    public String[][] getMovimentosValidos() {
+        return movimentosValidos;
+    }
+
+    public String getOrdem() {
+        return ordem;
+    }
+
     private String[][] convertPuzzle(BlockEntity[] puzzle){
 
         int counter = 0;
         this.puzzle = new String[4][4];
+        this.movimentosValidos = new String[4][4];
+        this.ordem = "";
         for (int i = 0; i < puzzle.length / 4; i++){
             for (int j = 0; j < puzzle.length / 4; j++) {
 
@@ -150,8 +131,31 @@ public class MatchWatcher {
                     puzzle[counter].getTubes().rotate();
                     this.puzzle[i][j] += puzzle[counter].getTubes().first().toString();
                     puzzle[counter].getTubes().rotate();
+                    switch (puzzle[counter].getType()) {
+                        case "red" -> {
+                            this.movimentosValidos[i][j] = "1";
+                            this.ordem += "0";
+                        }
+                        case "blue" -> {
+                            this.movimentosValidos[i][j] = "2";
+                            this.ordem += "0";
+                            depth++;
+                        }
+                        case "orange" -> {
+                            this.movimentosValidos[i][j] = "3";
+                            this.ordem += "1";
+                            depth++;
+                        }
+                        case "green" -> {
+                            this.movimentosValidos[i][j] = "4";
+                            this.ordem += "1";
+                        }
+                    }
+
                 }else{
                     this.puzzle[i][j] = "0000";
+                    this.movimentosValidos[i][j] = "0";
+                    this.ordem += "0";
                 }
                 counter++;
             }
@@ -159,4 +163,39 @@ public class MatchWatcher {
         return this.puzzle;
     }
 
+    public int getDepth() {
+        if (depth == 1){
+            return 4;
+        }
+        if (depth == 0){
+            return 1;
+        }
+        return (int)Math.pow(depth, 4);
+    }
+
+    public String getAsSolution(String[][] puzzle, String order) {
+
+        StringBuilder sol = new StringBuilder("{");
+        int counter = 0;
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                int rel = Integer.parseInt(String.valueOf(order.charAt(counter)))-1;
+                if (rel != -1) {
+                    String numbers = puzzle[i][j].replaceAll("", ";").replaceFirst(";", "");
+                    sol.append("[").append(numbers).append(blockPool.get(rel)).append("]");
+                    if (counter != 15)
+                        sol.append(", ");
+                }else if (counter != 15) {
+                    sol.append("null, ");
+                }else{
+                    sol.append("null");
+                }
+                counter++;
+            }
+        }
+        sol.append("}");
+
+        return sol.toString().replaceAll(" ", "");
+
+    }
 }

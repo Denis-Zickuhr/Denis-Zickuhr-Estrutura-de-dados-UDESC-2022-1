@@ -32,21 +32,24 @@ public class CampoDeTestes {
 
         // printAllRecursive(3, s, ',');
 //
-        String blocos = "0000000000000110";
+        String blocos = "0000000000001110";
 
-        int[] ordem = new int[]{1,2};
+        int[] ordem = new int[]{1,2,3};
 
 
         CampoDeTestes campoDeTestes = new CampoDeTestes();
+        //campoDeTestes.permute(ordem);
 
-        campoDeTestes.permute(ordem);
         //System.out.println(list);
 
-        System.out.println(campoDeTestes.binarySelection(blocos, 16).length);
+        //System.out.println(campoDeTestes.binarySelection(blocos, 16).length);
 
         //campoDeTestes.merge(campoDeTestes.binarySelection(blocos, 8), list);
 
-        //System.out.println(Integer.toString(Integer.parseInt("1", 10), 4));
+//        int r = 4;
+//        for (int i = 0; i < Math.pow(r, r); i++) {
+//            System.out.println(padLeftStatic(Integer.toString(Integer.parseInt(Integer.toString(i), 10), 4), r, '0'));
+//        }
 
     }
 
@@ -157,19 +160,32 @@ public class CampoDeTestes {
             if (string.chars().average().equals(cs.chars().average())){
                 String str = cs.toString().replaceAll("1", "#");
 
-                for (int last = 0; last < list.size(); last++) {
-                    String strCopy = str;
-                    for (int j = 0; j < list.get(last).toString().length(); j++) {
-                        strCopy = strCopy.replaceFirst("#", list.get(last).toString().charAt(j) + "");
-                    }
-                    temp.add(strCopy);
-                }
+//                for (int last = 0; last < list.size(); last++) {
+//                    String strCopy = str;
+//                    for (int j = 0; j < list.get(last).toString().length(); j++) {
+//                        strCopy = strCopy.replaceFirst("#", list.get(last).toString().charAt(j) + "");
+//                    }
+//                    temp.add(strCopy);
+//                }
             }
         }
         return temp.toArray();
     }
 
     public String padLeft(String string, int length, char character) {
+        if (string.length() >= length) {
+            return string;
+        }
+        StringBuilder sb = new StringBuilder();
+        while (sb.length() < length - string.length()) {
+            sb.append(character);
+        }
+        sb.append(string);
+
+        return sb.toString();
+    }
+
+    public static String padLeftStatic(String string, int length, char character) {
         if (string.length() >= length) {
             return string;
         }

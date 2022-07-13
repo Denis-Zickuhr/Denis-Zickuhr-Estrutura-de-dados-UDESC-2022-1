@@ -79,3 +79,65 @@ public List<Estado> sucessores() {
 		//System.out.println(count);
 		return suc;
 	}
+
+
+
+
+
+
+
+	while (rotacao != Math.pow(r, r)) {
+
+    			cs = padLeft(Integer.toBinaryString(movements), 16, '0');
+    			boolean movimentoValido = ordemBlocos.chars().average().equals(cs.chars().average());
+    			while (!movimentoValido) {
+    				movements++;
+    				cs = padLeft(Integer.toBinaryString(movements), 16, '0');
+    				movimentoValido = ordemBlocos.chars().average().equals(cs.chars().average());
+    			}
+
+    			String str = cs.toString().replaceAll("1", "#");
+    			for (int last = 0; last < list.size(); last++) {
+    				String strCopy = str;
+    				for (int j = 0; j < list.get(last).toString().length(); j++) {
+    					strCopy = strCopy.replaceFirst("#", list.get(last).toString().charAt(j) + "");
+    				}
+
+    				boolean validOrder = true;
+    				strCopy = applyMask(strCopy, movementMask);
+    				if (!(mediaDeBlocos == strCopy.chars().average().getAsDouble())) {
+    					validOrder = false;
+    				}
+
+    				// Cria um bloco novo, com a nova rotação
+
+    				if (validOrder) {
+    					String state = padLeft(Integer.toString(Integer.parseInt(Integer.toString(rotacao), 10), 4), r, '0');
+    					String[][] puzzleNovo = applyRotations(blockPool, strCopy, state);
+    					if (puzzleIsConexo(puzzleNovo)) {
+
+    						String csAux = padLeft(Integer.toBinaryString(movements), 16, '0');
+    						boolean movimentoValidoAux = ordemBlocos.chars().average().equals(csAux.chars().average());
+    						while (!movimentoValidoAux) {
+    							movements++;
+    							cs = padLeft(Integer.toBinaryString(movements), 16, '0');
+    							movimentoValidoAux = ordemBlocos.chars().average().equals(cs.chars().average());
+    						}
+
+    						int auxMovements = movements;
+
+    						ConnectMeEstado sucessor;
+    						sucessor = new ConnectMeEstado(puzzle, movimentosValidos, ordemBlocos, (movements + 1), puzzleNovo);
+    						suc.add(sucessor);
+    					} else {
+    						movements++;
+    						break;
+    					}
+    				}
+    			}
+    			rotacao++;
+    		}
+
+    		return suc;
+
+    	}

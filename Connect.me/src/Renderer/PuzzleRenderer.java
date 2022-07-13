@@ -1,36 +1,43 @@
 package Renderer;
 
-import Assets.Puzzles;
+import Assets.Packer;
 import Model.BlockEntity;
 
 import javax.swing.*;
-import javax.swing.border.BevelBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
+import java.util.Arrays;
+
 import Process.MatchWatcher;
+import Shared.Buscas.*;
+import Shared.NovoProblema.ConnectMeEstado;
 
 /**
  *
  * @author Denis
  */
 public class PuzzleRenderer extends JFrame {
-    private JPanel jp_contentPane;
+    private final JPanel jp_contentPane;
     private JPanel jp_grid;
-    private JPanel jp_buttons;
-    private JPanel jp_block;
     private JButton btn_load;
     private JButton btn_width;
     private JButton btn_depth;
     private JButton btn_about;
-    private JLabel description;
-    private int sample = 0;
+    private final JLabel description;
     private boolean redraw = false;
-    private static JButton lastBtnClk;
     private static int lastBtnClkNumber;
     private static BlockEntity[] array;
     private MatchWatcher mt;
+    private final Packer dataPacker = new Packer();
 
+    public void setDescription(String description) {
+        this.description.setText(description);
+    }
+
+    public static void setArray(BlockEntity[] array) {
+        PuzzleRenderer.array = array;
+    }
 
     public PuzzleRenderer() throws Exception {
 
@@ -49,7 +56,7 @@ public class PuzzleRenderer extends JFrame {
         loadButtons();
         drawGrid(new BlockEntity[16]);
 
-        description = new JLabel("Time elapsed: 0ms Solution depth: 0");
+        description = new JLabel("Time elapsed: 0ms, Solution depth: 0, Nodes visited: ");
         jp_contentPane.add(BorderLayout.NORTH, description);
 
         // call onCancel() when cross is clicked
@@ -77,7 +84,7 @@ public class PuzzleRenderer extends JFrame {
     }
 
     private void loadButtons(){
-        jp_buttons = new JPanel();
+        JPanel jp_buttons = new JPanel();
         btn_load = new JButton("Load");
         btn_width = new JButton("Width");
         btn_depth = new JButton("Depth");
@@ -105,12 +112,20 @@ public class PuzzleRenderer extends JFrame {
 
         btn_width.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                onWidth();
+                try {
+                    onWidth();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
             }
         });
         btn_depth.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                onDepth();
+                try {
+                    onDepth();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
             }
         });
 
@@ -130,15 +145,15 @@ public class PuzzleRenderer extends JFrame {
         mt.watch(array.clone());
 
         if (mt.win())
-            System.out.println("W");
+            System.out.println("Vitória");
         else
-            System.out.println("L");
+            System.out.println("Solução Inválida");
 
 
 
         for(int i=0;i<array.length;i++) {
 
-            jp_block = new JPanel();
+            JPanel jp_block = new JPanel();
             BorderLayout layout = new BorderLayout();
             jp_block.setLayout(layout);
 
@@ -264,31 +279,46 @@ public class PuzzleRenderer extends JFrame {
 
     }
 
-
-    class Block extends JLabel{
-        @Override
-        public void setText(String text) {
-            super.setText(text);
-            super.setFont(new Font("Arial",Font.BOLD,60));
-            super.setBorder(new BevelBorder(1));
-        }
-    }
-
     private void onLoad() throws Exception {
         //LoadRenderer loadRenderer = new LoadRenderer(this);
         FileDialog fileDialog = new FileDialog((Frame) null);
         fileDialog.setVisible(true);
         String path = fileDialog.getDirectory() + fileDialog.getFile();
-        Puzzles puzzle = new Puzzles();
-        this.drawGrid(puzzle.returnPuzzle(path));
+        this.drawGrid(this.dataPacker.loadPuzzle(path));
     }
 
-    private void onWidth() {
-        System.out.println("Width");
+    private void onWidth() throws Exception {
+
+        ConnectMeEstado estadoInicial = new ConnectMeEstado(mt.getPuzzle(), mt.getMovimentosValidos(), mt.getOrdem());
+
+        Busca<ConnectMeEstado> busca = new BuscaLargura<>(new MostraStatusConsole());
+        ConnectMeEstado estadoFinal = (ConnectMeEstado)busca.busca(estadoInicial).getEstado();
+        setDescription(
+                "Time elapsed: "+busca.getStatus().getTempoDecorrido()
+                        +"ms, Solution depth: "+busca.getStatus().getProfundidade()
+                        +", Nodes visited: " + busca.getStatus().getVisitados());
+
+        String result = mt.getAsSolution(estadoFinal.getPuzzle(), estadoFinal.getGenerator());
+        drawGrid(this.dataPacker.getPuzzle(result));
+
     }
 
-    private void onDepth(){
-        System.out.println("Depth");
+    private void onDepth() throws Exception {
+
+        ConnectMeEstado estadoInicial = new ConnectMeEstado(mt.getPuzzle(), mt.getMovimentosValidos(), mt.getOrdem());
+
+        ConnectMeEstado estadoFinal;
+
+        Busca<ConnectMeEstado> busca = new BuscaProfundidade<>(mt.getDepth(), new MostraStatusConsole());
+        estadoFinal = (ConnectMeEstado) busca.busca(estadoInicial).getEstado();
+        setDescription(
+                "Time elapsed: "+busca.getStatus().getTempoDecorrido()
+                        +"ms, Solution depth: "+busca.getStatus().getProfundidade()
+                        +", Nodes visited: " + busca.getStatus().getVisitados());
+
+        String result = mt.getAsSolution(estadoFinal.getPuzzle(), estadoFinal.getGenerator());
+        drawGrid(this.dataPacker.getPuzzle(result));
+
     }
 
     private void onAbout() {
@@ -299,7 +329,7 @@ public class PuzzleRenderer extends JFrame {
         dispose();
     }
 
-    private String moveBlock(int blockPosition, int newPosition) throws Exception {
+    private void moveBlock(int blockPosition, int newPosition) throws Exception {
         if (array[newPosition] == null){
             BlockEntity s = array[blockPosition];
             BlockEntity f = array[newPosition];
@@ -307,13 +337,10 @@ public class PuzzleRenderer extends JFrame {
             array[newPosition] = s;
             drawGrid(array);
             lastBtnClkNumber = 999;
-            return "block successfully moved!";
         }else{
             if (array[newPosition].getType().equals("red") | array[newPosition].getType().equals("blue")){
-                return array[newPosition].getType() + " block cant be moved to!";
             }else{
                 if(array[blockPosition].getType().equals("red") | array[blockPosition].getType().equals("blue")){
-                    return array[newPosition].getType() + " block cant be moved!";
                 }else{
                     BlockEntity s = array[blockPosition];
                     BlockEntity f = array[newPosition];
@@ -321,7 +348,6 @@ public class PuzzleRenderer extends JFrame {
                     array[newPosition] = s;
                     drawGrid(array);
                     lastBtnClkNumber = 999;
-                    return "block successfully moved!";
                 }
             }
         }
