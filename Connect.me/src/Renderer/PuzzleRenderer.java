@@ -10,8 +10,7 @@ import java.io.IOException;
 
 import Process.MatchWatcher;
 import Shared.Buscas.*;
-import Shared.NovoProblema.ConnectMeEstadoConn;
-import Shared.NovoProblema.ConnectMeEstadoENode;
+import Process.ConnectMeEstadoENode;
 
 /**
  *
@@ -23,8 +22,6 @@ public class PuzzleRenderer extends JFrame {
     private JButton btn_load;
     private JButton btn_width;
     private JButton btn_depth;
-    private JButton btn_widthDis;
-    private JButton btn_depthDis;
     private JButton btn_about;
     private final JLabel description;
     private boolean redraw = false;
@@ -89,16 +86,12 @@ public class PuzzleRenderer extends JFrame {
     private void loadButtons(){
         JPanel jp_buttons = new JPanel();
         btn_load = new JButton("Carregar");
-        btn_width = new JButton("Largura (1)");
-        btn_depth = new JButton("Profundidade (1)");
-        btn_widthDis = new JButton("Largura");
-        btn_depthDis = new JButton("Profundidade");
+        btn_width = new JButton("Largura");
+        btn_depth = new JButton("Profundidade");
         btn_about = new JButton("Sobre");
         jp_buttons.add(btn_load);
-//        jp_buttons.add(btn_width);
-//        jp_buttons.add(btn_depth);
-        jp_buttons.add(btn_widthDis);
-        jp_buttons.add(btn_depthDis);
+        jp_buttons.add(btn_width);
+        jp_buttons.add(btn_depth);
         jp_buttons.add(btn_about);
         jp_contentPane.add(BorderLayout.SOUTH, jp_buttons);
         loadEvents();
@@ -135,24 +128,6 @@ public class PuzzleRenderer extends JFrame {
                 }
             }
         });
-        btn_widthDis.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    onWidthDis();
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            }
-        });
-        btn_depthDis.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    onDepthDis();
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            }
-        });
 
         btn_about.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -168,13 +143,6 @@ public class PuzzleRenderer extends JFrame {
             mt = new MatchWatcher(array.clone());
         else
         mt.watch(array.clone());
-
-        if (mt.win())
-            System.out.println("Vitória");
-        else
-            System.out.println("Solução Inválida");
-
-
 
         for(int i=0;i<array.length;i++) {
 
@@ -314,40 +282,6 @@ public class PuzzleRenderer extends JFrame {
 
     private void onWidth() throws Exception {
 
-        ConnectMeEstadoConn estadoInicial = new ConnectMeEstadoConn(mt.getPuzzle(), mt.getMovimentosValidos(), mt.getOrdem());
-
-        Busca<ConnectMeEstadoConn> busca = new BuscaLargura<>(new MostraStatusConsole());
-        ConnectMeEstadoConn estadoFinal = (ConnectMeEstadoConn)busca.busca(estadoInicial).getEstado();
-        setDescription(
-                "Time elapsed: "+busca.getStatus().getTempoDecorrido()
-                        +"ms, Solution depth: "+busca.getStatus().getProfundidade()
-                        +", Nodes visited: " + busca.getStatus().getVisitados());
-
-        String result = mt.getAsSolution(estadoFinal.getPuzzle(), estadoFinal.getGenerator());
-        drawGrid(this.dataPacker.getPuzzle(result));
-
-    }
-
-    private void onDepth() throws Exception {
-
-        ConnectMeEstadoConn estadoInicial = new ConnectMeEstadoConn(mt.getPuzzle(), mt.getMovimentosValidos(), mt.getOrdem());
-
-        ConnectMeEstadoConn estadoFinal;
-
-        Busca<ConnectMeEstadoConn> busca = new BuscaProfundidade<>(mt.getDepth(), new MostraStatusConsole());
-        estadoFinal = (ConnectMeEstadoConn) busca.busca(estadoInicial).getEstado();
-        setDescription(
-                "Time elapsed: "+busca.getStatus().getTempoDecorrido()
-                        +"ms, Solution depth: "+busca.getStatus().getProfundidade()
-                        +", Nodes visited: " + busca.getStatus().getVisitados());
-
-        String result = mt.getAsSolution(estadoFinal.getPuzzle(), estadoFinal.getGenerator());
-        drawGrid(this.dataPacker.getPuzzle(result));
-
-    }
-
-    private void onWidthDis() throws Exception {
-
         ConnectMeEstadoENode estadoInicial = new ConnectMeEstadoENode(mt.getPuzzle(), mt.getMovimentosValidos(), mt.getOrdem());
 
         Busca<ConnectMeEstadoENode> busca = new BuscaLargura<>(new MostraStatusConsole());
@@ -357,12 +291,18 @@ public class PuzzleRenderer extends JFrame {
                         +"ms, Solution depth: "+busca.getStatus().getProfundidade()
                         +", Nodes visited: " + busca.getStatus().getVisitados());
 
-        String result = mt.getAsSolution(estadoFinal.getPuzzle(), estadoFinal.getGenerator());
-        drawGrid(this.dataPacker.getPuzzle(result));
+
+        if (!estadoFinal.getGenerator().equals("init")){
+            String result = mt.getAsSolution(estadoFinal.getPuzzle(), estadoFinal.getGenerator());
+            drawGrid(this.dataPacker.getPuzzle(result));
+        }else{
+            drawGrid(array);
+        }
+
 
     }
 
-    private void onDepthDis() throws Exception {
+    private void onDepth() throws Exception {
 
         ConnectMeEstadoENode estadoInicial = new ConnectMeEstadoENode(mt.getPuzzle(), mt.getMovimentosValidos(), mt.getOrdem());
 
@@ -375,8 +315,12 @@ public class PuzzleRenderer extends JFrame {
                         +"ms, Solution depth: "+busca.getStatus().getProfundidade()
                         +", Nodes visited: " + busca.getStatus().getVisitados());
 
-        String result = mt.getAsSolution(estadoFinal.getPuzzle(), estadoFinal.getGenerator());
-        drawGrid(this.dataPacker.getPuzzle(result));
+        if (!estadoFinal.getGenerator().equals("init")){
+            String result = mt.getAsSolution(estadoFinal.getPuzzle(), estadoFinal.getGenerator());
+            drawGrid(this.dataPacker.getPuzzle(result));
+        }else{
+            drawGrid(array);
+        }
 
     }
 

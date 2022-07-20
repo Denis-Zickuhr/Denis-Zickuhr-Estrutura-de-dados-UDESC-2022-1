@@ -163,13 +163,7 @@ public class MatchWatcher {
     }
 
     public int getDepth() {
-        if (depth == 1){
-            return 4;
-        }
-        if (depth == 0){
-            return 1;
-        }
-        return (int)Math.pow(depth, 4);
+        return (int)Math.pow(4, depth);
     }
 
     public String getAsSolution(String[][] puzzle, String order) {
@@ -178,15 +172,15 @@ public class MatchWatcher {
         int counter = 0;
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
-                int rel = Integer.parseInt(String.valueOf(order.charAt(counter)))-1;
-                if (rel != -1) {
+                int rel = Integer.parseInt(String.valueOf(((int)order.charAt(counter)-64)-1));
+                if (rel >= 0) {
                     String numbers = puzzle[i][j].replaceAll("", ";").replaceFirst(";", "");
                     sol.append("[").append(numbers).append(blockPool.get(rel)).append("]");
                     if (counter != 15)
                         sol.append(", ");
-                }else if (counter != 15) {
+                } else if (counter != 15) {
                     sol.append("null, ");
-                }else{
+                } else {
                     sol.append("null");
                 }
                 counter++;
@@ -195,6 +189,5 @@ public class MatchWatcher {
         sol.append("}");
 
         return sol.toString().replaceAll(" ", "");
-
     }
 }

@@ -1,40 +1,42 @@
-package Shared.NovoProblema;
+package Process;
 
-import Shared.Buscas.*;
+import Shared.Buscas.Estado;
 
 import java.util.*;
 
-public class ConnectMeEstadoConn implements Estado {
+public class ConnectMeEstadoENode implements Estado {
 
 	private String[][] movimentosValidos;
 	private final String[][] puzzle;
 	private String ordemBlocos;
 	private final List<String> blockOrders = new ArrayList<>();
-	private List<Solution[]> solutionsList;
 	private final boolean firstGen;
-	private Solution[] solutions;
 	private int next;
 	private String generator;
-	private int meta;
+	private final int meta;
+	private List<String> blockPool;
+	private final int rotations;
 
-	public ConnectMeEstadoConn(String[][] puzzle, String[][] movimentosValidos, String ordemBlocos){
+	public ConnectMeEstadoENode(String[][] puzzle, String[][] movimentosValidos, String ordemBlocos){
 		this.puzzle = puzzle;
 		this.movimentosValidos = movimentosValidos;
 		this.ordemBlocos = ordemBlocos;
 		firstGen = true;
 		next = 0;
-		this.generator =  "pai";
-		this.solutionsList = null;
+		this.generator =  "init";
 		meta = 0;
+		this.blockPool = new ArrayList<String>(16);
+		this.rotations = 0;
 	}
 
-	private ConnectMeEstadoConn(String[][] puzzle, Solution[] solutions, int prox, String generator, int meta){
+	private ConnectMeEstadoENode(String[][] puzzle, int prox, String generator, int meta, List<String> blockPool, int rotations){
 		this.puzzle = puzzle;
-		this.solutions = solutions;
 		this.generator = generator;
 		firstGen = false;
 		this.next = prox;
 		this.meta = meta;
+		this.blockPool = blockPool;
+		this.rotations = rotations;
 	}
 
 	public String[][] getPuzzle() {
@@ -60,189 +62,135 @@ public class ConnectMeEstadoConn implements Estado {
 		return 1;
 	}
 
-	private static class Solution {
-		private final String[][] solution;
-		private final String blockReference;
-		Solution(String [][] solution, String blockReference){
-			this.solution = solution;
-			this.blockReference = blockReference;
-		}
-
-		public String[][] getSolution(){
-			return this.solution;
-		}
-
-		public String getBlockReference() {
-			return this.blockReference;
-		}
-	}
-
-
-	private List<Solution[]> geraEstados() {
-
-		List<Solution[]> solutions = new LinkedList<>();
-
-		List<Integer> movementMask = new ArrayList<>();
-		List<String> blockPool = new ArrayList<>();
-		List<Integer> permute = new ArrayList<>();
-
-		int movableBlocks = 1, iAxis = -1, jAxis, r = 0;
-		double averageStructure = 0;
-		StringBuilder preStr = new StringBuilder();
-
-
-		for (String[] s: movimentosValidos
-		) {
-			iAxis++;
-			jAxis = 0;
-			for (String s1: s
-			) {
-
-				boolean blocoGira = Integer.parseInt(s1) >= 2 & Integer.parseInt(s1) <= 3;
-				boolean ehUmBloco = Integer.parseInt(s1) > 0;
-				boolean blocoSeMovimenta = Integer.parseInt(s1) >= 3;
-				boolean blocoEstatico = Integer.parseInt(s1) <= 2;
-
-				if(!puzzle[iAxis][jAxis].equals("0000")){
-					if (blocoGira){
-						blockPool.add(puzzle[iAxis][jAxis] + "#");
-					}else{
-						blockPool.add(puzzle[iAxis][jAxis]);
-					}
-
-				}
-				jAxis++;
-				if (blocoGira){
-					r++;
-				}
-				if (ehUmBloco){
-					if (blocoSeMovimenta){
-						permute.add(movableBlocks);
-						preStr.append(movableBlocks);
-					}
-					if(blocoEstatico){
-						movementMask.add(movableBlocks);
-						preStr.append(movableBlocks);
-					}else{
-						movementMask.add(0);
-						if (!(blocoSeMovimenta))
-							preStr.append("0");
-					}
-					movableBlocks++;
-				}else{
-					movementMask.add(0);
-					preStr.append("0");
-				}
-			}
-		}
-
-		this.generator = preStr.toString();
-
-		int [] permuteIntFormat;
-		if (permute.size() == 0){
-			permuteIntFormat = new int[1];
-			permuteIntFormat[0] = 1;
-		}else{
-			permuteIntFormat = new int[permute.size()];
-		}
-
-		for (int i = 0; i < permute.size(); i++) {
-			permuteIntFormat[i] = permute.get(i);
-		}
-
-		permute.clear();
-		if (preStr.chars().average().isPresent())
-			averageStructure = preStr.chars().average().getAsDouble();
-		permute(permuteIntFormat);
-
-		CharSequence cs;
-		int maxRotations = (int)Math.pow(r,4);
-		if (maxRotations < 2){
-			if (maxRotations == 1)
-				maxRotations = 4;
-			else
-				maxRotations = 1;
-		}
-		int maxMovements = (int)Math.pow(2, 16);
-		for (int i = maxMovements; i >= 0; i--) {
-			cs = padLeft(Integer.toBinaryString(i), 16);
-
-			boolean movimentoValido = ordemBlocos.chars().average().equals(cs.chars().average());
-			if (movimentoValido) {
-				String order = cs.toString().replaceAll("1", "#");
-				for (Object o : blockOrders) {
-					String newOrder = order;
-					for (int j = 0; j < o.toString().length(); j++) {
-						newOrder = newOrder.replaceFirst("#", o.toString().charAt(j) + "");
-					}
-
-					newOrder = applyMask(newOrder, movementMask);
-					boolean validOrder = false;
-					if (newOrder.chars().average().isPresent())
-						validOrder = averageStructure == newOrder.chars().average().getAsDouble();
-
-					// Cria um bloco novo, com a nova rotação
-
-					if (validOrder) {
-						Solution[] sol = new Solution[maxRotations];
-						boolean solValid = false;
-						for (int j = 0; j < maxRotations; j++) {
-							String rotationState = padLeft(Integer.toString(Integer.parseInt(Integer.toString(j), 10), 4), r);
-							String[][] puzzleNovo = createBlock(blockPool, newOrder, rotationState);
-							if (puzzleIsConexo(puzzleNovo)) {
-								sol[j] = new Solution(puzzleNovo, newOrder);
-							} else {
-								solValid = true;
-								break;
-							}
-						}
-						if (!solValid)
-							solutions.add(sol);
-					}
-				}
-			}
-		}
-		return solutions;
-	}
-
 	@Override
 	public List<Estado> sucessores() {
 
 		List<Estado> suc = new LinkedList<>();
 
-		if(firstGen){
-			this.solutionsList = geraEstados();
-			for (Solution[] value : solutionsList) {
-				for (int j = 0; j < value.length; j++) {
-					if (value[j] != null) {
-						String[][] newPuzzle = value[j].getSolution();
-						String newGenerator = value[j].getBlockReference();
-						value[j] = null;
-						ConnectMeEstadoConn sucessor = new ConnectMeEstadoConn(newPuzzle, value, 1, newGenerator, meta(newPuzzle));
-						suc.add(sucessor);
-						break;
+		if(this.firstGen) {
+
+			List<Integer> movementMask = new ArrayList<>();
+			List<String> blockPool = new ArrayList<>();
+			List<Integer> permute = new ArrayList<>();
+
+			int movableBlocks = 1, iAxis = -1, jAxis, r = 0;
+			StringBuilder preStr = new StringBuilder();
+
+			for (String[] s : movimentosValidos
+			) {
+				iAxis++;
+				jAxis = 0;
+				for (String s1 : s
+				) {
+
+					boolean blockCanSwirl = Integer.parseInt(s1) >= 2 & Integer.parseInt(s1) <= 3;
+					boolean validBlock = Integer.parseInt(s1) > 0;
+					boolean blockMoves = Integer.parseInt(s1) >= 3;
+					boolean blockCantMove = Integer.parseInt(s1) <= 2;
+
+					if (!puzzle[iAxis][jAxis].equals("0000")) {
+						if (blockCanSwirl) {
+							blockPool.add(puzzle[iAxis][jAxis] + "#");
+						} else {
+							blockPool.add(puzzle[iAxis][jAxis]);
+						}
+
+					}
+					jAxis++;
+					if (blockCanSwirl) {
+						r++;
+					}
+					if (validBlock) {
+						if (blockMoves) {
+							permute.add(movableBlocks);
+							preStr.append(movableBlocks);
+						}
+						if (blockCantMove) {
+							movementMask.add(movableBlocks);
+							preStr.append(movableBlocks);
+						} else {
+							movementMask.add(0);
+							if (!(blockMoves))
+								preStr.append("0");
+						}
+						movableBlocks++;
+					} else {
+						movementMask.add(0);
+						preStr.append("0");
 					}
 				}
 			}
+
+			this.blockPool = blockPool;
+			this.generator = preStr.toString();
+
+			int[] permuteIntFormat;
+			if (permute.size() == 0) {
+				permuteIntFormat = new int[1];
+				permuteIntFormat[0] = 1;
+			} else {
+				permuteIntFormat = new int[permute.size()];
+			}
+
+			for (int i = 0; i < permute.size(); i++) {
+				permuteIntFormat[i] = permute.get(i);
+			}
+
+			permute.clear();
+			permute(permuteIntFormat);
+
+			CharSequence cs;
+			int maxMovements = (int) Math.pow(2, 16);
+			for (int i = maxMovements; i >= 0; i--) {
+				cs = padLeft(Integer.toBinaryString(i), 16);
+
+				boolean movimentoValido = ordemBlocos.chars().average().equals(cs.chars().average());
+				if (movimentoValido) {
+					String order = cs.toString().replaceAll("1", "#");
+					for (Object o : blockOrders) {
+						String newOrder = order;
+						for (int j = 0; j < o.toString().length(); j++) {
+							String enteringSequence = String.valueOf(o.toString().charAt(j));
+							newOrder = newOrder.replaceFirst("#", enteringSequence);
+						}
+						newOrder = applyMask(newOrder, movementMask);
+						if (newOrder.length() == 16) {
+							String[][] newPuzzle = createBlock(blockPool, newOrder, "0000000000000000");
+							if (puzzleIsConexo(newPuzzle)) {
+								ConnectMeEstadoENode s = new ConnectMeEstadoENode(newPuzzle, next, newOrder, meta(newPuzzle), this.blockPool, r);
+								if(!suc.contains(s)){
+									suc.add(new ConnectMeEstadoENode(newPuzzle, next, newOrder, meta(newPuzzle), this.blockPool, r));
+								}
+							} else {
+								break;
+							}
+						}
+					}
+				}
+			}
+			return suc;
 		}else{
-			try {
-				int aux = Integer.MIN_VALUE;
-				while(this.meta >= aux){ //10 > 0; 10 > 9
-					String[][] newPuzzle = this.solutions[next].getSolution();
-					aux = meta(newPuzzle);
-					if(aux > this.meta){
-						String newGenerator = this.solutions[next].getBlockReference();
-						ConnectMeEstadoConn sucessor = new ConnectMeEstadoConn(newPuzzle, this.solutions, next + 1, newGenerator, aux);
-						suc.add(sucessor);
-					}else{
+			int maxRotations = (int)Math.pow(4, rotations);
+			int newMeta = Integer.MIN_VALUE;
+			for (int i = 1; i <= rotations; i++) {
+				if (next * i >= maxRotations) {
+					return suc;
+				}
+				while (this.meta >= newMeta) {
+					String rotationState = padLeft(Integer.toString(Integer.parseInt(Integer.toString(next*i), 10), 4), rotations);
+					String[][] newPuzzle = createBlock(blockPool, this.generator, rotationState);
+					newMeta = meta(newPuzzle);
+					if (newMeta > this.meta) {
+						ConnectMeEstadoENode s =
+								new ConnectMeEstadoENode(newPuzzle, this.next + i, this.generator, (newMeta-1), this.blockPool, this.rotations);
+						suc.add(s);
+					} else {
 						this.next++;
-						if(next == this.solutions.length){
+						if (next == maxRotations) {
 							return suc;
 						}
 					}
 				}
-			}catch(Exception e){
-				// Fim do nó deste sucessor
 			}
 		}
 		return suc;
@@ -259,7 +207,7 @@ public class ConnectMeEstadoConn implements Estado {
 					if (!puzzleLocal[i][j].equals("0000"))
 						puzzleLocal[i][j] = "0000";
 				}else{
-					String bloco = blocks.get(Integer.parseInt(orderArray[countTotal])-1);
+					String bloco = blocks.get(((((int)(orderArray[countTotal]).charAt(0))-64) -1 ));
 					if (bloco.length() > 4){
 						bloco = bloco.replace("#", "");
 						puzzleLocal[i][j] = rotateBlock(bloco, giros.charAt(countBlocos));
@@ -275,14 +223,18 @@ public class ConnectMeEstadoConn implements Estado {
 	}
 
 	private String applyMask(String s,List<Integer> l){
-		StringBuilder aux = new StringBuilder();
+		StringBuilder sb = new StringBuilder();
+		char newPiece = 0;
 		for (int i = 0; i < s.length(); i++) {
-			if (s.charAt(i) != '0')
-				aux.append(s.charAt(i));
-			else
-				aux.append(l.get(i));
+			if (s.charAt(i) != '0') {
+				if(l.get(i) == 0)
+					sb.append(s.charAt(i));
+			}else{
+				newPiece = (char) (l.get(i) + 64);
+				sb.append(newPiece);
+			}
 		}
-		return aux.toString();
+		return sb.toString().replaceAll("@", "0").replaceAll("!", "");
 	}
 
 	private boolean puzzleIsConexo(String[][] puzzle){
@@ -355,7 +307,7 @@ public class ConnectMeEstadoConn implements Estado {
 	
 	@Override
 	public int hashCode() {
-		return (Arrays.deepToString(puzzle)).hashCode();
+		return ((Arrays.deepToString(puzzle)) + this.generator).hashCode();
 	}
 	
 	@Override
@@ -534,7 +486,7 @@ public class ConnectMeEstadoConn implements Estado {
 	private void addOrder(int[] input) {
 		StringBuilder value = new StringBuilder();
 		for (int j : input) {
-			value.append(j);
+				value.append((char)(j+64));
 		}
 		blockOrders.add(value.toString());
 	}
