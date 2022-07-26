@@ -1,1 +1,0 @@
-{null,null,null,null,null,null,null,[0;0;2;0;red],null,[0;0;0;3;blue],[0;3;0;3;blue],[2;3;2;0;blue],null,null,null,[2;0;0;0;red]}

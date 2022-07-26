@@ -1,6 +1,6 @@
 package Renderer;
 
-import Assets.Packer;
+import Process.Packer;
 import Model.BlockEntity;
 
 import javax.swing.*;
@@ -189,7 +189,7 @@ public class PuzzleRenderer extends JFrame {
                 });
 
             }else{
-                ImagePanel block = new ImagePanel("src/Assets/null.png");
+                ImagePanel block = new ImagePanel("Assets/null.png");
                 block.setPreferredSize(new Dimension(120, 120));
                //block.setBackground(Color.gray);
 
@@ -245,13 +245,13 @@ public class PuzzleRenderer extends JFrame {
     }
 
     private ImagePanel getBlockImage(String type){
-        return new ImagePanel("src/Assets/" + type + ".png");
+        return new ImagePanel("Assets/" + type + ".png");
     }
 
     private ImagePanel getBar(int i, char dir) throws Exception {
 
         int h = 0, w = 0;
-        ImagePanel tubes = new ImagePanel("src/Assets/tubes"+i+dir+"u.png");
+        ImagePanel tubes = new ImagePanel("Assets/tubes"+i+dir+"u.png");
 
         switch (dir){
             case 'h' : {

@@ -1,7 +1,6 @@
 package Model;
 
 import DataStructure.CircularlyLinkedList;
-import org.jetbrains.annotations.NotNull;
 
 /**
  *
@@ -12,7 +11,7 @@ public class BlockEntity extends BaseEntity{
     private CircularlyLinkedList tubes;
     private final String type;
 
-    public BlockEntity(@NotNull CircularlyLinkedList tubes, @NotNull String type) {
+    public BlockEntity(CircularlyLinkedList tubes, String type) {
         if (tubes.size() == 4) {
             this.tubes = tubes;
             if (typeIsValid(type)) {
@@ -33,7 +32,7 @@ public class BlockEntity extends BaseEntity{
         return type;
     }
 
-    public boolean RotateBlock(@NotNull String type){
+    public boolean RotateBlock(String type){
         if(!(type.equals("blue") | type.equals("orange"))){
             System.out.println("Block " + type + " cannot be rotated!");
             return false;

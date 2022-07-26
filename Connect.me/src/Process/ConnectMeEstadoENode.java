@@ -142,7 +142,7 @@ public class ConnectMeEstadoENode implements Estado {
 			CharSequence cs;
 			int maxMovements = (int) Math.pow(2, 16);
 			for (int i = maxMovements; i >= 0; i--) {
-				cs = padLeft(Integer.toBinaryString(i), 16);
+				cs = padLeft(Integer.toBinaryString(i), 16); // 01001001
 
 				boolean movimentoValido = ordemBlocos.chars().average().equals(cs.chars().average());
 				if (movimentoValido) {
